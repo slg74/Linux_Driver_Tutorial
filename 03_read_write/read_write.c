@@ -46,14 +46,14 @@ static ssize_t driver_write(struct file *File, const char *user_buffer, size_t c
 	size_t to_copy, not_copied, delta;
 
 	/* Get amount of data to copy */
-	to_copy = min_t(size_t, count, sizeof(buffer) - buffer_pointer);
+	to_copy = min_t(size_t, count, sizeof(buffer));
 
 	/* Copy data to user */
-	not_copied = copy_from_user(&buffer[buffer_pointer], user_buffer, to_copy); 
+	not_copied = copy_from_user(buffer, user_buffer, to_copy);
+	buffer_pointer = to_copy;
 
 	/* Calculate data */
 	delta = to_copy - not_copied;
-	buffer_pointer += delta;
 
 	return delta;
 }
@@ -82,12 +82,10 @@ static struct file_operations fops = {
 	.write = driver_write
 };
 
-
 /**
  * @brief This function is called, when the module is loaded into the kernel
  */
 static int __init ModuleInit(void) {
-
 	printk("Hello, Kernel!\n");
 
 	/* Allocate a device nr */
