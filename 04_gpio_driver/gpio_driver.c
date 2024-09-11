@@ -22,18 +22,13 @@ static struct cdev my_device;
  * @brief Read data out of the buffer
  */
 static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, loff_t *offs) {
-	int to_copy, not_copied, delta;
-	char tmp[3] = " \n";
+	size_t to_copy, not_copied, delta;
 
 	/* Get amount of data to copy */
-	to_copy = min(count, sizeof(tmp));
-
-	/* Read value of button */
-	printk("Value of button: %d\n", gpio_get_value(17));
-	tmp[0] = gpio_get_value(17) + '0';
+	to_copy = min_t(size_t, count, buffer_pointer); 
 
 	/* Copy data to user */
-	not_copied = copy_to_user(user_buffer, &tmp, to_copy);
+	not_copied = copy_to_user(user_buffer, buffer, to_copy);
 
 	/* Calculate data */
 	delta = to_copy - not_copied;
