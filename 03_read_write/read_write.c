@@ -25,10 +25,10 @@ static struct cdev my_device;
  * @brief Read data out of the buffer
  */
 static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, loff_t *offs) {
-	int to_copy, not_copied, delta;
+	size_t to_copy, not_copied, delta;
 
 	/* Get amount of data to copy */
-	to_copy = min(count, buffer_pointer);
+	to_copy = min_t(size_t, count, buffer_pointer);
 
 	/* Copy data to user */
 	not_copied = copy_to_user(user_buffer, buffer, to_copy);
@@ -43,17 +43,17 @@ static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, l
  * @brief Write data to buffer
  */
 static ssize_t driver_write(struct file *File, const char *user_buffer, size_t count, loff_t *offs) {
-	int to_copy, not_copied, delta;
+	size_t to_copy, not_copied, delta;
 
 	/* Get amount of data to copy */
-	to_copy = min(count, sizeof(buffer));
+	to_copy = min_t(size_t, count, sizeof(buffer) - buffer_pointer);
 
 	/* Copy data to user */
-	not_copied = copy_from_user(buffer, user_buffer, to_copy);
-	buffer_pointer = to_copy;
+	not_copied = copy_from_user(&buffer[buffer_pointer], user_buffer, to_copy); 
 
 	/* Calculate data */
 	delta = to_copy - not_copied;
+	buffer_pointer += delta;
 
 	return delta;
 }
@@ -82,11 +82,12 @@ static struct file_operations fops = {
 	.write = driver_write
 };
 
+
 /**
  * @brief This function is called, when the module is loaded into the kernel
  */
 static int __init ModuleInit(void) {
-	int retval;
+
 	printk("Hello, Kernel!\n");
 
 	/* Allocate a device nr */
@@ -97,7 +98,7 @@ static int __init ModuleInit(void) {
 	printk("read_write - Device Nr. Major: %d, Minor: %d was registered!\n", my_device_nr >> 20, my_device_nr & 0xfffff);
 
 	/* Create device class */
-	if((my_class = class_create(THIS_MODULE, DRIVER_CLASS)) == NULL) {
+	if((my_class = class_create(DRIVER_CLASS)) == NULL) {
 		printk("Device class can not be created!\n");
 		goto ClassError;
 	}
